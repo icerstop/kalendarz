@@ -1,370 +1,483 @@
-import React, { useState, useEffect } from 'react';
-import { Download, X, Upload } from 'lucide-react';
-
-const AbsenceCalendar = () => {
-  const [selectedDates, setSelectedDates] = useState(new Set());
-  const [laterDates, setLaterDates] = useState(new Set());
-  const [activeMode, setActiveMode] = useState('absent'); // 'absent' or 'later'
-
-  const holidays = new Set([
-    '2025-11-11', // Święto Niepodległości
-    '2025-12-25', // Boże Narodzenie
-    '2025-12-26', // Drugi dzień Bożego Narodzenia
-    '2026-01-01'  // Nowy Rok
-  ]);
-
-  // Początkowe dane - nie będę we wszystkie czwartki i wskazane okresy
-  const initialAbsences = () => {
-    const dates = new Set();
-    
-    // Wszystkie czwartki
-    const thursdays = [
-      '2025-10-02', '2025-10-09', '2025-10-16', '2025-10-23', '2025-10-30',
-      '2025-11-06', '2025-11-13', '2025-11-20', '2025-11-27',
-      '2025-12-04', '2025-12-11', '2025-12-18', '2025-12-25',
-      '2026-01-08', '2026-01-15', '2026-01-22', '2026-01-29'
-    ];
-    thursdays.forEach(d => dates.add(d));
-    
-    // 5-11 listopada
-    for (let day = 5; day <= 11; day++) {
-      dates.add(`2025-11-${String(day).padStart(2, '0')}`);
-    }
-    
-    // 29 grudnia - 2 stycznia
-    dates.add('2025-12-29');
-    dates.add('2025-12-30');
-    dates.add('2025-12-31');
-    dates.add('2026-01-01');
-    dates.add('2026-01-02');
-    
-    // 5-8 grudnia
-    for (let day = 5; day <= 8; day++) {
-      dates.add(`2025-12-${String(day).padStart(2, '0')}`);
-    }
-    
-    return dates;
-  };
-
-  // Wczytaj dane z localStorage przy starcie
-  useEffect(() => {
-    const savedAbsent = localStorage.getItem('absenceCalendar_absent');
-    const savedLater = localStorage.getItem('absenceCalendar_later');
-    
-    if (savedAbsent) {
-      setSelectedDates(new Set(JSON.parse(savedAbsent)));
-    } else {
-      // Jeśli nie ma zapisanych danych, użyj początkowych
-      setSelectedDates(initialAbsences());
-    }
-    
-    if (savedLater) {
-      setLaterDates(new Set(JSON.parse(savedLater)));
-    }
-  }, []);
-
-  // Zapisz dane do localStorage przy każdej zmianie
-  useEffect(() => {
-    localStorage.setItem('absenceCalendar_absent', JSON.stringify(Array.from(selectedDates)));
-  }, [selectedDates]);
-
-  useEffect(() => {
-    localStorage.setItem('absenceCalendar_later', JSON.stringify(Array.from(laterDates)));
-  }, [laterDates]);
-
-  const months = [
-    { name: 'Październik 2025', year: 2025, month: 9, startDay: 1, endDay: 31 },
-    { name: 'Listopad 2025', year: 2025, month: 10, startDay: 1, endDay: 30 },
-    { name: 'Grudzień 2025', year: 2025, month: 11, startDay: 1, endDay: 31 },
-    { name: 'Styczeń 2026', year: 2026, month: 0, startDay: 1, endDay: 31 }
-  ];
-
-  const formatDate = (year, month, day) => {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  };
-
-  const isWeekend = (year, month, day) => {
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
-    return dayOfWeek === 0 || dayOfWeek === 6;
-  };
-
-  const isHoliday = (year, month, day) => {
-    const dateStr = formatDate(year, month, day);
-    return holidays.has(dateStr);
-  };
-
-  const toggleDate = (year, month, day) => {
-    const dateStr = formatDate(year, month, day);
-    
-    if (activeMode === 'absent') {
-      const newSelected = new Set(selectedDates);
-      const newLater = new Set(laterDates);
-      
-      if (newSelected.has(dateStr)) {
-        newSelected.delete(dateStr);
-      } else {
-        newSelected.add(dateStr);
-        newLater.delete(dateStr);
-      }
-      
-      setSelectedDates(newSelected);
-      setLaterDates(newLater);
-    } else {
-      const newLater = new Set(laterDates);
-      const newSelected = new Set(selectedDates);
-      
-      if (newLater.has(dateStr)) {
-        newLater.delete(dateStr);
-      } else {
-        newLater.add(dateStr);
-        newSelected.delete(dateStr);
-      }
-      
-      setLaterDates(newLater);
-      setSelectedDates(newSelected);
-    }
-  };
-
-  const downloadCalendar = () => {
-    const absentDays = Array.from(selectedDates).sort();
-    const laterDays = Array.from(laterDates).sort();
-    
-    let content = 'KIEDY MNIE NIE BĘDZIE :-----------)\n\n';
-    content += `Okres: 1 października 2025 - 31 stycznia 2026\n\n`;
-    
-    if (absentDays.length > 0) {
-      content += '=== DNI NIEOBECNOŚCI ===\n';
-      absentDays.forEach(date => {
-        const [year, month, day] = date.split('-');
-        const dateObj = new Date(year, month - 1, day);
-        const dayName = dateObj.toLocaleDateString('pl-PL', { weekday: 'long' });
-        content += `${day}.${month}.${year} (${dayName})\n`;
-      });
-      content += `\nŁącznie dni nieobecności: ${absentDays.length}\n\n`;
-    }
-    
-    if (laterDays.length > 0) {
-      content += '=== DNI SPÓŹNIEŃ (przyjście później) ===\n';
-      laterDays.forEach(date => {
-        const [year, month, day] = date.split('-');
-        const dateObj = new Date(year, month - 1, day);
-        const dayName = dateObj.toLocaleDateString('pl-PL', { weekday: 'long' });
-        content += `${day}.${month}.${year} (${dayName})\n`;
-      });
-      content += `\nŁącznie dni spóźnień: ${laterDays.length}\n`;
-    }
-    
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'nieobecnosci.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const exportData = () => {
-    const data = {
-      absent: Array.from(selectedDates),
-      later: Array.from(laterDates)
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'kalendarz_backup.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const importData = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = JSON.parse(e.target.result);
-          setSelectedDates(new Set(data.absent || []));
-          setLaterDates(new Set(data.later || []));
-        } catch (error) {
-          alert('Błąd podczas wczytywania pliku!');
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIEDY MNIE NIE BEDZIE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  const clearAll = () => {
-    if (confirm('Czy na pewno chcesz wyczyścić wszystkie zaznaczenia?')) {
-      setSelectedDates(new Set());
-      setLaterDates(new Set());
-    }
-  };
-
-  const renderMonth = (monthData) => {
-    const { name, year, month, startDay, endDay } = monthData;
-    const firstDay = new Date(year, month, 1).getDay();
-    const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
-    
-    const days = [];
-    
-    for (let i = 0; i < adjustedFirstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-16"></div>);
-    }
-    
-    for (let day = startDay; day <= endDay; day++) {
-      const dateStr = formatDate(year, month, day);
-      const weekend = isWeekend(year, month, day);
-      const holiday = isHoliday(year, month, day);
-      const isAbsent = selectedDates.has(dateStr);
-      const isLater = laterDates.has(dateStr);
-      
-      let bgColor = 'bg-white hover:bg-gray-50';
-      if (weekend || holiday) bgColor = 'bg-gray-100';
-      if (isAbsent) bgColor = 'bg-red-400 hover:bg-red-500';
-      if (isLater) bgColor = 'bg-yellow-300 hover:bg-yellow-400';
-      
-      days.push(
-        <div key={day} className="relative">
-          <button
-            onClick={() => toggleDate(year, month, day)}
-            className={`w-full h-16 border border-gray-300 ${bgColor} transition-colors flex items-center justify-center font-semibold cursor-pointer`}
-          >
-            {day}
-          </button>
-          {holiday && (
-            <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded-bl">
-              Święto
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #c7d2fe 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .mode-btn {
+            padding: 12px 24px;
+            border: 3px solid;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mode-btn.absent {
+            background: #f87171;
+            border-color: #dc2626;
+            color: white;
+        }
+        .mode-btn.absent.active {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }
+        .mode-btn.absent.inactive {
+            background: #fecaca;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        .mode-btn.later {
+            background: #fde047;
+            border-color: #eab308;
+            color: #713f12;
+        }
+        .mode-btn.later.active {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);
+        }
+        .mode-btn.later.inactive {
+            background: #fef9c3;
+            border-color: #fde047;
+            color: #854d0e;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #d1d5db;
+        }
+        .info {
+            text-align: center;
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-green { background: #16a34a; }
+        .btn-green:hover { background: #15803d; }
+        .btn-blue { background: #2563eb; }
+        .btn-blue:hover { background: #1d4ed8; }
+        .btn-purple { background: #9333ea; }
+        .btn-purple:hover { background: #7e22ce; }
+        .btn-gray { background: #6b7280; }
+        .btn-gray:hover { background: #4b5563; }
+        .stats {
+            text-align: center;
+            color: #4b5563;
+        }
+        .stat-number {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .stat-absent { color: #dc2626; }
+        .stat-later { color: #eab308; }
+        .calendar-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .month {
+            margin-bottom: 40px;
+        }
+        .month-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0;
+            border: 1px solid #d1d5db;
+        }
+        .day-header {
+            background: #e5e7eb;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+        }
+        .day {
+            position: relative;
+            height: 60px;
+            border: 1px solid #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        .day:hover {
+            background: #f3f4f6;
+        }
+        .day.weekend {
+            background: #f3f4f6;
+        }
+        .day.absent {
+            background: #f87171;
+            color: white;
+        }
+        .day.absent:hover {
+            background: #ef4444;
+        }
+        .day.later {
+            background: #fde047;
+            color: #713f12;
+        }
+        .day.later:hover {
+            background: #facc15;
+        }
+        .day.holiday::after {
+            content: 'S';
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>KIEDY MNIE NIE BEDZIE :-----------)</h1>
+            <p class="subtitle">1 pazdziernika 2025 - 31 stycznia 2026</p>
+            
+            <div class="mode-selector">
+                <button class="mode-btn absent active" id="btnAbsent">Nie bedzie mnie</button>
+                <button class="mode-btn later inactive" id="btnLater">Przychodze pozniej</button>
             </div>
-          )}
-        </div>
-      );
-    }
-    
-    return (
-      <div key={name} className="mb-8">
-        <h3 className="text-xl font-bold mb-3 text-gray-800">{name}</h3>
-        <div className="grid grid-cols-7 gap-0 border border-gray-300">
-          {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(day => (
-            <div key={day} className="bg-gray-200 border border-gray-300 p-2 text-center font-bold text-sm">
-              {day}
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #f87171;"></div>
+                    <span>Nie bedzie mnie</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #fde047;"></div>
+                    <span>Przychodze pozniej</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #f3f4f6;"></div>
+                    <span>Weekend/Swieto</span>
+                </div>
             </div>
-          ))}
-          {days}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
-          <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
-            KIEDY MNIE NIE BĘDZIE :-----------)
-          </h1>
-          <p className="text-center text-gray-600 mb-4">
-            1 października 2025 - 31 stycznia 2026
-          </p>
-          
-          <div className="mb-6">
-            <p className="text-center text-sm font-semibold mb-3 text-gray-700">
-              Wybierz tryb zaznaczania:
-            </p>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => setActiveMode('absent')}
-                className={`px-6 py-3 rounded-lg border-2 transition-all ${
-                  activeMode === 'absent'
-                    ? 'bg-red-400 border-red-600 text-white font-bold shadow-lg scale-105'
-                    : 'bg-red-200 border-red-300 text-red-800 hover:bg-red-300'
-                }`}
-              >
-                🚫 Nie będzie mnie
-              </button>
-              <button
-                onClick={() => setActiveMode('later')}
-                className={`px-6 py-3 rounded-lg border-2 transition-all ${
-                  activeMode === 'later'
-                    ? 'bg-yellow-300 border-yellow-500 text-gray-800 font-bold shadow-lg scale-105'
-                    : 'bg-yellow-100 border-yellow-200 text-yellow-800 hover:bg-yellow-200'
-                }`}
-              >
-                ⏰ Przychodzę później
-              </button>
+            
+            <div class="info">
+                <p><strong>Instrukcja:</strong> Kliknij najpierw wybrany tryb (czerwony lub zolty), a potem klikaj w dni w kalendarzu</p>
+                <p style="font-size: 12px; margin-top: 5px;">Dane zapisuja sie automatycznie w przegladarce</p>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-4 justify-center mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-red-400 border border-gray-300"></div>
-              <span className="text-sm">Nie będzie mnie</span>
+            
+            <div class="buttons">
+                <button class="btn btn-green" id="btnDownload">Pobierz liste</button>
+                <button class="btn btn-blue" id="btnExport">Eksportuj dane</button>
+                <label class="btn btn-purple" for="fileImport">Importuj dane</label>
+                <input type="file" id="fileImport" class="file-input" accept=".json">
+                <button class="btn btn-gray" id="btnClear">Wyczysc wszystko</button>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-yellow-300 border border-gray-300"></div>
-              <span className="text-sm">Przychodzę później</span>
+            
+            <div class="stats">
+                <p>Zaznaczono nieobecnosci: <span class="stat-number stat-absent" id="countAbsent">0</span> dni</p>
+                <p>Zaznaczono spoznienia: <span class="stat-number stat-later" id="countLater">0</span> dni</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gray-100 border border-gray-300"></div>
-              <span className="text-sm">Weekend/Święto</span>
-            </div>
-          </div>
-
-          <div className="text-center text-sm text-gray-600 mb-4">
-            <p className="font-semibold">Kliknij najpierw w wybrany kolor (tryb), a potem klikaj w dni w kalendarzu</p>
-            <p className="text-xs mt-1">Dane zapisują się automatycznie w przeglądarce</p>
-          </div>
-          
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button
-              onClick={downloadCalendar}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Download size={20} />
-              Pobierz listę
-            </button>
-            <button
-              onClick={exportData}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Download size={20} />
-              Eksportuj dane
-            </button>
-            <label className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer">
-              <Upload size={20} />
-              Importuj dane
-              <input type="file" accept=".json" onChange={importData} className="hidden" />
-            </label>
-            <button
-              onClick={clearAll}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <X size={20} />
-              Wyczyść wszystko
-            </button>
-          </div>
-          
-          <div className="mt-4 text-center">
-            <p className="text-sm text-gray-600">
-              Zaznaczono nieobecności: <span className="font-bold text-red-600">{selectedDates.size}</span> dni
-            </p>
-            <p className="text-sm text-gray-600">
-              Zaznaczono spóźnienia: <span className="font-bold text-yellow-600">{laterDates.size}</span> dni
-            </p>
-          </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          {months.map(renderMonth)}
-        </div>
-      </div>
+        <div class="calendar-container" id="calendarContainer"></div>
     </div>
-  );
-};
 
-export default AbsenceCalendar;
+    <script>
+        var state = {
+            absent: new Set(),
+            later: new Set(),
+            mode: 'absent'
+        };
+
+        var holidays = ['2025-11-11', '2025-12-25', '2025-12-26', '2026-01-01'];
+        
+        var monthsData = [
+            {name: 'Pazdziernik 2025', year: 2025, month: 10, days: 31, start: 3},
+            {name: 'Listopad 2025', year: 2025, month: 11, days: 30, start: 6},
+            {name: 'Grudzien 2025', year: 2025, month: 12, days: 31, start: 1},
+            {name: 'Styczen 2026', year: 2026, month: 1, days: 31, start: 4}
+        ];
+
+        function initData() {
+            var saved = localStorage.getItem('calendar_data');
+            if (saved) {
+                var data = JSON.parse(saved);
+                state.absent = new Set(data.absent);
+                state.later = new Set(data.later);
+            } else {
+                var thursdays = ['2025-10-02','2025-10-09','2025-10-16','2025-10-23','2025-10-30','2025-11-06','2025-11-13','2025-11-20','2025-11-27','2025-12-04','2025-12-11','2025-12-18','2025-12-25','2026-01-08','2026-01-15','2026-01-22','2026-01-29'];
+                thursdays.forEach(function(d) { state.absent.add(d); });
+                
+                for (var i = 5; i <= 11; i++) {
+                    state.absent.add('2025-11-' + (i < 10 ? '0' + i : i));
+                }
+                for (var i = 5; i <= 8; i++) {
+                    state.absent.add('2025-12-' + (i < 10 ? '0' + i : i));
+                }
+                state.absent.add('2025-12-29');
+                state.absent.add('2025-12-30');
+                state.absent.add('2025-12-31');
+                state.absent.add('2026-01-01');
+                state.absent.add('2026-01-02');
+            }
+        }
+
+        function saveData() {
+            var data = {
+                absent: Array.from(state.absent),
+                later: Array.from(state.later)
+            };
+            localStorage.setItem('calendar_data', JSON.stringify(data));
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('countAbsent').textContent = state.absent.size;
+            document.getElementById('countLater').textContent = state.later.size;
+        }
+
+        function formatDate(year, month, day) {
+            var m = month < 10 ? '0' + month : month;
+            var d = day < 10 ? '0' + day : day;
+            return year + '-' + m + '-' + d;
+        }
+
+        function isWeekend(year, month, day) {
+            var date = new Date(year, month - 1, day);
+            var dow = date.getDay();
+            return dow === 0 || dow === 6;
+        }
+
+        function toggleDay(dateStr) {
+            if (state.mode === 'absent') {
+                if (state.absent.has(dateStr)) {
+                    state.absent.delete(dateStr);
+                } else {
+                    state.absent.add(dateStr);
+                    state.later.delete(dateStr);
+                }
+            } else {
+                if (state.later.has(dateStr)) {
+                    state.later.delete(dateStr);
+                } else {
+                    state.later.add(dateStr);
+                    state.absent.delete(dateStr);
+                }
+            }
+            saveData();
+            render();
+        }
+
+        function render() {
+            var html = '';
+            monthsData.forEach(function(m) {
+                html += '<div class="month">';
+                html += '<div class="month-title">' + m.name + '</div>';
+                html += '<div class="calendar">';
+                
+                var days = ['Pn','Wt','Sr','Cz','Pt','So','Nd'];
+                days.forEach(function(d) {
+                    html += '<div class="day-header">' + d + '</div>';
+                });
+                
+                for (var i = 1; i < m.start; i++) {
+                    html += '<div></div>';
+                }
+                
+                for (var day = 1; day <= m.days; day++) {
+                    var dateStr = formatDate(m.year, m.month, day);
+                    var classes = 'day';
+                    
+                    if (isWeekend(m.year, m.month, day)) {
+                        classes += ' weekend';
+                    }
+                    if (state.absent.has(dateStr)) {
+                        classes += ' absent';
+                    }
+                    if (state.later.has(dateStr)) {
+                        classes += ' later';
+                    }
+                    if (holidays.indexOf(dateStr) >= 0) {
+                        classes += ' holiday';
+                    }
+                    
+                    html += '<div class="' + classes + '" onclick="toggleDay(\'' + dateStr + '\')">' + day + '</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            document.getElementById('calendarContainer').innerHTML = html;
+        }
+
+        document.getElementById('btnAbsent').onclick = function() {
+            state.mode = 'absent';
+            this.className = 'mode-btn absent active';
+            document.getElementById('btnLater').className = 'mode-btn later inactive';
+        };
+
+        document.getElementById('btnLater').onclick = function() {
+            state.mode = 'later';
+            this.className = 'mode-btn later active';
+            document.getElementById('btnAbsent').className = 'mode-btn absent inactive';
+        };
+
+        document.getElementById('btnDownload').onclick = function() {
+            var text = 'KIEDY MNIE NIE BEDZIE :-----------)\n\n';
+            text += 'Okres: 1 pazdziernika 2025 - 31 stycznia 2026\n\n';
+            
+            if (state.absent.size > 0) {
+                text += '=== DNI NIEOBECNOSCI ===\n';
+                Array.from(state.absent).sort().forEach(function(d) {
+                    var parts = d.split('-');
+                    text += parts[2] + '.' + parts[1] + '.' + parts[0] + '\n';
+                });
+                text += '\nLacznie: ' + state.absent.size + ' dni\n\n';
+            }
+            
+            if (state.later.size > 0) {
+                text += '=== DNI SPOZNIEN ===\n';
+                Array.from(state.later).sort().forEach(function(d) {
+                    var parts = d.split('-');
+                    text += parts[2] + '.' + parts[1] + '.' + parts[0] + '\n';
+                });
+                text += '\nLacznie: ' + state.later.size + ' dni\n';
+            }
+            
+            var blob = new Blob([text], {type: 'text/plain'});
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'nieobecnosci.txt';
+            a.click();
+        };
+
+        document.getElementById('btnExport').onclick = function() {
+            var data = {
+                absent: Array.from(state.absent),
+                later: Array.from(state.later)
+            };
+            var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'kalendarz.json';
+            a.click();
+        };
+
+        document.getElementById('fileImport').onchange = function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        var data = JSON.parse(ev.target.result);
+                        state.absent = new Set(data.absent);
+                        state.later = new Set(data.later);
+                        saveData();
+                        render();
+                    } catch(err) {
+                        alert('Blad wczytywania pliku!');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        document.getElementById('btnClear').onclick = function() {
+            if (confirm('Czy na pewno chcesz wyczyscic wszystkie zaznaczenia?')) {
+                state.absent = new Set();
+                state.later = new Set();
+                saveData();
+                render();
+            }
+        };
+
+        initData();
+        updateStats();
+        render();
+    </script>
+</body>
+</html>
