@@ -3,287 +3,505 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KIEDY MNIE NIE BEDZIE</title>
+    <title>Kalendarz Nieobecności</title>
     <style>
+        /* ------------------- */
+        /* 1. Zmienne i Reset  */
+        /* ------------------- */
+        :root {
+            --bg-main: #f4f4f9;
+            --bg-card: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-on-accent: #ffffff;
+            --border-color: #d2d2d7;
+            --shadow-color: rgba(0, 0, 0, 0.05);
+            --accent-color: #0071e3;
+            --accent-color-hover: #0077ed;
+            --absent-bg: #dc3545;
+            --later-bg: #ffc107;
+            --later-text: #1d1d1f;
+            --weekend-bg: #f9f9f9;
+            --weekend-text: #8a8a8e;
+            --today-border: #0071e3;
+            --icon-filter: invert(0%);
+        }
+
+        body.dark-theme {
+            --bg-main: #131314;
+            --bg-card: #1d1d1f;
+            --text-primary: #f5f5f7;
+            --text-secondary: #a1a1a6;
+            --border-color: #3a3a3c;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --absent-bg: #e5484d;
+            --later-bg: #ffc40c;
+            --later-text: #1d1d1f;
+            --weekend-bg: #2c2c2e;
+            --weekend-text: #8d8d92;
+            --icon-filter: invert(100%);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
+
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #e0f2fe 0%, #c7d2fe 100%);
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            padding: 32px 20px;
             min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
         }
+
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
+
+        /* ------------------- */
+        /* 2. Nagłówek         */
+        /* ------------------- */
         .header {
-            background: white;
-            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-top: 4px;
+        }
+        
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 99px;
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+        
+        .theme-switcher button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .theme-switcher svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+            transition: fill 0.2s;
+        }
+        
+        .theme-switcher button.active svg {
+            fill: var(--accent-color);
+        }
+
+        /* ------------------- */
+        /* 3. Panel Główny    */
+        /* ------------------- */
+        .card {
+            background-color: var(--bg-card);
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        .password-section {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .password-container {
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-field {
+            padding: 12px 18px;
+            border: 1px solid var(--border-color);
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            font-size: 16px;
+            width: 260px;
+            transition: all 0.2s;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: inherit;
         }
-        h1 {
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        body.dark-theme .btn {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        
+        .btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        body.dark-theme .btn:hover {
+            background-color: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--text-on-accent);
+            border: 1px solid var(--accent-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-color-hover);
+            border-color: var(--accent-color-hover);
+        }
+        
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .error-message {
+            color: var(--absent-bg);
             text-align: center;
-            color: #1f2937;
-            margin-bottom: 10px;
+            margin-top: 16px;
+            font-weight: 500;
+            font-size: 14px;
         }
-        .subtitle {
-            text-align: center;
-            color: #6b7280;
-            margin-bottom: 20px;
+
+        /* ------------------- */
+        /* 4. Tryb Edycji     */
+        /* ------------------- */
+        .edit-mode {
+            display: none;
         }
+
+        .edit-mode.active {
+            display: block;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        
         .mode-selector {
             display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 20px;
+            gap: 4px;
+            padding: 4px;
+            background-color: var(--bg-main);
+            border-radius: 10px;
         }
+
         .mode-btn {
-            padding: 12px 24px;
-            border: 3px solid;
+            padding: 8px 24px;
+            border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            background-color: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
         }
-        .mode-btn.absent {
-            background: #f87171;
-            border-color: #dc2626;
-            color: white;
+
+        .mode-btn.active {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px var(--shadow-color);
         }
-        .mode-btn.absent.active {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-        }
-        .mode-btn.absent.inactive {
-            background: #fecaca;
-            border-color: #fca5a5;
-            color: #991b1b;
-        }
-        .mode-btn.later {
-            background: #fde047;
-            border-color: #eab308;
-            color: #713f12;
-        }
-        .mode-btn.later.active {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);
-        }
-        .mode-btn.later.inactive {
-            background: #fef9c3;
-            border-color: #fde047;
-            color: #854d0e;
-        }
-        .legend {
+        
+        .action-buttons {
             display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 20px;
+            gap: 12px;
             flex-wrap: wrap;
         }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 20px 0;
+        }
+
         .legend-item {
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
+
         .legend-box {
-            width: 24px;
-            height: 24px;
-            border: 1px solid #d1d5db;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
         }
-        .info {
-            text-align: center;
-            color: #4b5563;
-            margin-bottom: 20px;
-        }
-        .buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        .btn-green { background: #16a34a; }
-        .btn-green:hover { background: #15803d; }
-        .btn-blue { background: #2563eb; }
-        .btn-blue:hover { background: #1d4ed8; }
-        .btn-purple { background: #9333ea; }
-        .btn-purple:hover { background: #7e22ce; }
-        .btn-gray { background: #6b7280; }
-        .btn-gray:hover { background: #4b5563; }
-        .stats {
-            text-align: center;
-            color: #4b5563;
-        }
-        .stat-number {
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .stat-absent { color: #dc2626; }
-        .stat-later { color: #eab308; }
-        .calendar-container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+
+        /* ------------------- */
+        /* 5. Kalendarz       */
+        /* ------------------- */
         .month {
-            margin-bottom: 40px;
+            margin-bottom: 48px;
         }
+        .month:last-child {
+            margin-bottom: 0;
+        }
+
         .month-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            color: #1f2937;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 24px;
         }
+
         .calendar {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 0;
-            border: 1px solid #d1d5db;
+            gap: 4px;
         }
+
         .day-header {
-            background: #e5e7eb;
-            padding: 10px;
+            color: var(--text-secondary);
+            padding: 12px 0;
             text-align: center;
-            font-weight: bold;
-            border: 1px solid #d1d5db;
-            font-size: 14px;
+            font-weight: 600;
+            font-size: 13px;
         }
+
         .day {
             position: relative;
-            height: 60px;
-            border: 1px solid #d1d5db;
+            height: 64px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
+            font-weight: 500;
+            font-size: 15px;
+            border-radius: 8px;
+            transition: all 0.15s ease-out;
+            background-color: var(--bg-card);
+        }
+
+        .day.clickable {
             cursor: pointer;
-            transition: all 0.2s;
-            background: white;
         }
-        .day:hover {
-            background: #f3f4f6;
+        .day.clickable:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px var(--shadow-color);
         }
+        
+        .day.clickable:active {
+            transform: scale(0.95);
+        }
+        
+        .day.today {
+            box-shadow: inset 0 0 0 2px var(--today-border);
+            color: var(--today-border);
+            font-weight: 700;
+        }
+
         .day.weekend {
-            background: #f3f4f6;
+            background-color: var(--weekend-bg);
+            color: var(--weekend-text);
         }
+
         .day.absent {
-            background: #f87171;
-            color: white;
+            background-color: var(--absent-bg);
+            color: var(--text-on-accent);
         }
-        .day.absent:hover {
-            background: #ef4444;
-        }
+
         .day.later {
-            background: #fde047;
-            color: #713f12;
+            background-color: var(--later-bg);
+            color: var(--later-text);
         }
-        .day.later:hover {
-            background: #facc15;
-        }
+
         .day.holiday::after {
-            content: 'S';
+            content: '';
             position: absolute;
-            top: 2px;
-            right: 4px;
-            background: #3b82f6;
-            color: white;
-            font-size: 10px;
-            padding: 2px 4px;
-            border-radius: 3px;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
         }
-        .file-input {
-            display: none;
+        
+        .empty-day {
+            background-color: transparent;
+        }
+
+        /* ------------------- */
+        /* 6. Responsywność   */
+        /* ------------------- */
+        @media (max-width: 768px) {
+            body { padding: 20px 12px; }
+            .header { flex-direction: column; gap: 16px; text-align: center; }
+            .header-title h1 { font-size: 24px; }
+            .card { padding: 20px; }
+            .controls { flex-direction: column; }
+            .day { height: 48px; font-size: 14px; border-radius: 6px; }
+            .month-title { font-size: 18px; }
+            .calendar { gap: 2px; }
         }
     </style>
 </head>
 <body>
+
     <div class="container">
-        <div class="header">
-            <h1>KIEDY MNIE NIE BEDZIE :-----------)</h1>
-            <p class="subtitle">1 pazdziernika 2025 - 31 stycznia 2026</p>
-            
-            <div class="mode-selector">
-                <button class="mode-btn absent active" id="btnAbsent">Nie bedzie mnie</button>
-                <button class="mode-btn later inactive" id="btnLater">Przychodze pozniej</button>
+        <header class="header">
+            <div class="header-title">
+                <h1>Kalendarz nieobecności</h1>
+                <p>1 października 2025 - 31 stycznia 2026</p>
             </div>
-            
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-box" style="background: #f87171;"></div>
-                    <span>Nie bedzie mnie</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box" style="background: #fde047;"></div>
-                    <span>Przychodze pozniej</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-box" style="background: #f3f4f6;"></div>
-                    <span>Weekend/Swieto</span>
-                </div>
+            <div class="theme-switcher">
+                <button id="lightModeBtn" title="Tryb jasny">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1S11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.02-0.39-1.41,0 L3.17,6.00c-0.39,0.39-0.39,1.02,0,1.41c0.39,0.39,1.02,0.39,1.41,0l1.41-1.41C6.38,5.61,6.38,4.97,5.99,4.58z M18.36,16.95 c-0.39-0.39-1.02-0.39-1.41,0l-1.41,1.41c-0.39,0.39-0.39,1.02,0,1.41c0.39,0.39,1.02,0.39,1.41,0l1.41-1.41 C18.75,17.98,18.75,17.34,18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.02,0-1.41l-1.41-1.41c-0.39-0.39-1.02-0.39-1.41,0 c-0.39,0.39-0.39,1.02,0,1.41l1.41,1.41C18.4,6.38,19.03,6.38,19.42,5.99z M7.41,18.36c0.39-0.39,0.39-1.02,0-1.41l-1.41-1.41 c-0.39-0.39-1.02-0.39-1.41,0c-0.39,0.39-0.39,1.02,0,1.41l1.41,1.41C6.38,18.75,7.02,18.75,7.41,18.36z"></path></svg>
+                </button>
+                <button id="darkModeBtn" title="Tryb ciemny">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg>
+                </button>
             </div>
-            
-            <div class="info">
-                <p><strong>Instrukcja:</strong> Kliknij najpierw wybrany tryb (czerwony lub zolty), a potem klikaj w dni w kalendarzu</p>
-                <p style="font-size: 12px; margin-top: 5px;">Dane zapisuja sie automatycznie w przegladarce</p>
-            </div>
-            
-            <div class="buttons">
-                <button class="btn btn-green" id="btnDownload">Pobierz liste</button>
-                <button class="btn btn-blue" id="btnExport">Eksportuj dane</button>
-                <label class="btn btn-purple" for="fileImport">Importuj dane</label>
-                <input type="file" id="fileImport" class="file-input" accept=".json">
-                <button class="btn btn-gray" id="btnClear">Wyczysc wszystko</button>
-            </div>
-            
-            <div class="stats">
-                <p>Zaznaczono nieobecnosci: <span class="stat-number stat-absent" id="countAbsent">0</span> dni</p>
-                <p>Zaznaczono spoznienia: <span class="stat-number stat-later" id="countLater">0</span> dni</p>
-            </div>
-        </div>
+        </header>
         
-        <div class="calendar-container" id="calendarContainer"></div>
+        <main>
+            <div class="card" id="passwordSection">
+                <div class="password-section">
+                    <div class="password-container">
+                        <input type="password" id="passwordInput" class="input-field" placeholder="Hasło dostępu">
+                        <button class="btn btn-primary" id="passwordBtn">Odblokuj</button>
+                    </div>
+                    <div class="error-message" id="errorMessage"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-box" style="background-color: var(--absent-bg);"></div><span>Nieobecność</span></div>
+                    <div class="legend-item"><div class="legend-box" style="background-color: var(--later-bg);"></div><span>Spóźnienie</span></div>
+                    <div class="legend-item"><div class="legend-box" style="background-color: var(--weekend-bg); border: 1px solid var(--border-color);"></div><span>Weekend</span></div>
+                    <div class="legend-item">Kropka pod datą ( • ) oznacza święto</div>
+                </div>
+            </div>
+            
+            <div class="edit-mode" id="editMode">
+                <div class="card">
+                     <div class="controls">
+                        <div class="mode-selector">
+                            <button class="mode-btn active" id="btnAbsent">Nieobecność</button>
+                            <button class="mode-btn" id="btnLater">Spóźnienie</button>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn" id="btnDownload">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                <span>Pobierz listę</span>
+                            </button>
+                            <button class="btn" id="btnExport">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                <span>Eksportuj</span>
+                            </button>
+                            <label class="btn" for="fileImport">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="9 3 3 3 3 9"/><line x1="14" y1="10" x2="3" y2="21"/></svg>
+                                <span>Importuj</span>
+                            </label>
+                            <input type="file" id="fileImport" class="file-input" accept=".json">
+                            <button class="btn" id="btnLogout">
+                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                <span>Wyloguj</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="calendarContainer"></div>
+        </main>
     </div>
 
     <script>
         var state = {
             absent: new Set(),
             later: new Set(),
-            mode: 'absent'
+            mode: 'absent',
+            unlocked: false,
+            theme: 'light'
         };
 
         var holidays = ['2025-11-11', '2025-12-25', '2025-12-26', '2026-01-01'];
         
         var monthsData = [
-            {name: 'Pazdziernik 2025', year: 2025, month: 10, days: 31, start: 3},
-            {name: 'Listopad 2025', year: 2025, month: 11, days: 30, start: 6},
-            {name: 'Grudzien 2025', year: 2025, month: 12, days: 31, start: 1},
-            {name: 'Styczen 2026', year: 2026, month: 1, days: 31, start: 4}
+            { name: 'Październik 2025', year: 2025, month: 10, days: 31, start: 4 },
+            { name: 'Listopad 2025', year: 2025, month: 11, days: 30, start: 7 },
+            { name: 'Grudzień 2025', year: 2025, month: 12, days: 31, start: 2 },
+            { name: 'Styczeń 2026', year: 2026, month: 1, days: 31, start: 5 }
         ];
 
-        function initData() {
-            var saved = localStorage.getItem('calendar_data');
-            if (saved) {
-                var data = JSON.parse(saved);
+        var today = new Date();
+        var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        
+        function initApp() {
+            var savedTheme = localStorage.getItem('calendar_theme') || 'light';
+            setTheme(savedTheme);
+
+            var savedData = localStorage.getItem('calendar_data');
+            if (savedData) {
+                var data = JSON.parse(savedData);
                 state.absent = new Set(data.absent);
                 state.later = new Set(data.later);
             } else {
@@ -302,6 +520,14 @@
                 state.absent.add('2026-01-01');
                 state.absent.add('2026-01-02');
             }
+            
+            if (sessionStorage.getItem('calendar_unlocked') === 'true') {
+                state.unlocked = true;
+                showEditMode();
+            }
+            
+            render();
+            addEventListeners();
         }
 
         function saveData() {
@@ -310,174 +536,196 @@
                 later: Array.from(state.later)
             };
             localStorage.setItem('calendar_data', JSON.stringify(data));
-            updateStats();
-        }
-
-        function updateStats() {
-            document.getElementById('countAbsent').textContent = state.absent.size;
-            document.getElementById('countLater').textContent = state.later.size;
-        }
-
-        function formatDate(year, month, day) {
-            var m = month < 10 ? '0' + month : month;
-            var d = day < 10 ? '0' + day : day;
-            return year + '-' + m + '-' + d;
-        }
-
-        function isWeekend(year, month, day) {
-            var date = new Date(year, month - 1, day);
-            var dow = date.getDay();
-            return dow === 0 || dow === 6;
-        }
-
-        function toggleDay(dateStr) {
-            if (state.mode === 'absent') {
-                if (state.absent.has(dateStr)) {
-                    state.absent.delete(dateStr);
-                } else {
-                    state.absent.add(dateStr);
-                    state.later.delete(dateStr);
-                }
-            } else {
-                if (state.later.has(dateStr)) {
-                    state.later.delete(dateStr);
-                } else {
-                    state.later.add(dateStr);
-                    state.absent.delete(dateStr);
-                }
-            }
-            saveData();
-            render();
         }
 
         function render() {
             var html = '';
+            var dayNames = ['Nie', 'Pon', 'Wto', 'Śro', 'Czw', 'Pią', 'Sob'];
+
             monthsData.forEach(function(m) {
-                html += '<div class="month">';
-                html += '<div class="month-title">' + m.name + '</div>';
-                html += '<div class="calendar">';
+                html += '<div class="month"><h2 class="month-title">' + m.name + '</h2><div class="calendar">';
                 
-                var days = ['Pn','Wt','Sr','Cz','Pt','So','Nd'];
-                days.forEach(function(d) {
+                dayNames.forEach(function(d) {
                     html += '<div class="day-header">' + d + '</div>';
                 });
                 
                 for (var i = 1; i < m.start; i++) {
-                    html += '<div></div>';
+                    html += '<div class="empty-day"></div>';
                 }
-                
+
                 for (var day = 1; day <= m.days; day++) {
                     var dateStr = formatDate(m.year, m.month, day);
-                    var classes = 'day';
-                    
-                    if (isWeekend(m.year, m.month, day)) {
-                        classes += ' weekend';
-                    }
-                    if (state.absent.has(dateStr)) {
-                        classes += ' absent';
-                    }
-                    if (state.later.has(dateStr)) {
-                        classes += ' later';
-                    }
-                    if (holidays.indexOf(dateStr) >= 0) {
-                        classes += ' holiday';
-                    }
-                    
-                    html += '<div class="' + classes + '" onclick="toggleDay(\'' + dateStr + '\')">' + day + '</div>';
+                    var classes = getDayClasses(m.year, m.month, day, dateStr);
+                    var clickHandler = state.unlocked ? ' onclick="toggleDay(\'' + dateStr + '\')"' : '';
+                    html += '<div class="' + classes + '"' + clickHandler + '>' + day + '</div>';
                 }
-                
                 html += '</div></div>';
             });
             
             document.getElementById('calendarContainer').innerHTML = html;
         }
 
-        document.getElementById('btnAbsent').onclick = function() {
-            state.mode = 'absent';
-            this.className = 'mode-btn absent active';
-            document.getElementById('btnLater').className = 'mode-btn later inactive';
-        };
+        function getDayClasses(year, month, day, dateStr) {
+            var classes = ['day'];
+            if (state.unlocked) classes.push('clickable');
+            if (isWeekend(year, month, day)) classes.push('weekend');
+            if (state.absent.has(dateStr)) classes.push('absent');
+            if (state.later.has(dateStr)) classes.push('later');
+            if (holidays.indexOf(dateStr) >= 0) classes.push('holiday');
+            if (dateStr === todayStr) classes.push('today');
+            return classes.join(' ');
+        }
+        
+        function addEventListeners() {
+            document.getElementById('passwordBtn').addEventListener('click', handleLogin);
+            document.getElementById('passwordInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleLogin(); });
+            document.getElementById('btnAbsent').addEventListener('click', function() { setMode('absent'); });
+            document.getElementById('btnLater').addEventListener('click', function() { setMode('later'); });
+            document.getElementById('btnDownload').addEventListener('click', downloadList);
+            document.getElementById('btnExport').addEventListener('click', exportData);
+            document.getElementById('fileImport').addEventListener('change', importData);
+            document.getElementById('btnLogout').addEventListener('click', logout);
+            document.getElementById('lightModeBtn').addEventListener('click', function() { setTheme('light'); });
+            document.getElementById('darkModeBtn').addEventListener('click', function() { setTheme('dark'); });
+        }
 
-        document.getElementById('btnLater').onclick = function() {
-            state.mode = 'later';
-            this.className = 'mode-btn later active';
-            document.getElementById('btnAbsent').className = 'mode-btn absent inactive';
-        };
+        function formatDate(year, month, day) {
+            return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        }
 
-        document.getElementById('btnDownload').onclick = function() {
-            var text = 'KIEDY MNIE NIE BEDZIE :-----------)\n\n';
-            text += 'Okres: 1 pazdziernika 2025 - 31 stycznia 2026\n\n';
+        function isWeekend(year, month, day) {
+            var d = new Date(year, month - 1, day).getDay();
+            return d === 0 || d === 6;
+        }
+        
+        function toggleDay(dateStr) {
+            if (!state.unlocked) return;
+            
+            var targetSet = state.mode === 'absent' ? state.absent : state.later;
+            var otherSet = state.mode === 'absent' ? state.later : state.absent;
+
+            if (targetSet.has(dateStr)) {
+                targetSet.delete(dateStr);
+            } else {
+                targetSet.add(dateStr);
+                otherSet.delete(dateStr);
+            }
+            saveData();
+            render();
+        }
+        
+        function setMode(newMode) {
+            state.mode = newMode;
+            document.getElementById('btnAbsent').classList.toggle('active', newMode === 'absent');
+            document.getElementById('btnLater').classList.toggle('active', newMode === 'later');
+        }
+
+        function showEditMode() {
+            document.getElementById('passwordSection').style.display = 'none';
+            document.getElementById('editMode').classList.add('active');
+            render();
+        }
+
+        function logout() {
+            state.unlocked = false;
+            sessionStorage.removeItem('calendar_unlocked');
+            document.getElementById('passwordSection').style.display = 'block';
+            document.getElementById('editMode').classList.remove('active');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('errorMessage').textContent = '';
+            render();
+        }
+
+        async function handleLogin() {
+            var password = document.getElementById('passwordInput').value;
+            var encoder = new TextEncoder();
+            var data = encoder.encode(password);
+            var hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            var hashHex = Array.from(new Uint8Array(hashBuffer)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+            
+            var correctHash = 'e54f15db430c968e8da2414cc0a37f094aa0182f35262af005cdcb19e344eeeb';
+
+            if (hashHex === correctHash) {
+                state.unlocked = true;
+                sessionStorage.setItem('calendar_unlocked', 'true');
+                document.getElementById('errorMessage').textContent = '';
+                showEditMode();
+            } else {
+                document.getElementById('errorMessage').textContent = 'Nieprawidłowe hasło';
+            }
+        }
+        
+        function setTheme(theme) {
+            state.theme = theme;
+            document.body.classList.toggle('dark-theme', theme === 'dark');
+            document.getElementById('lightModeBtn').classList.toggle('active', theme === 'light');
+            document.getElementById('darkModeBtn').classList.toggle('active', theme === 'dark');
+            localStorage.setItem('calendar_theme', theme);
+        }
+
+        function downloadList() {
+            var text = 'KALENDARZ NIEOBECNOŚCI\n';
+            text += 'Okres: 1 października 2025 - 31 stycznia 2026\n\n';
             
             if (state.absent.size > 0) {
-                text += '=== DNI NIEOBECNOSCI ===\n';
+                text += '=== DNI NIEOBECNOŚCI ===\n';
                 Array.from(state.absent).sort().forEach(function(d) {
                     var parts = d.split('-');
                     text += parts[2] + '.' + parts[1] + '.' + parts[0] + '\n';
                 });
-                text += '\nLacznie: ' + state.absent.size + ' dni\n\n';
+                text += '\nŁącznie: ' + state.absent.size + ' dni\n\n';
             }
-            
             if (state.later.size > 0) {
-                text += '=== DNI SPOZNIEN ===\n';
+                text += '=== DNI SPÓŹNIEŃ ===\n';
                 Array.from(state.later).sort().forEach(function(d) {
                     var parts = d.split('-');
                     text += parts[2] + '.' + parts[1] + '.' + parts[0] + '\n';
                 });
-                text += '\nLacznie: ' + state.later.size + ' dni\n';
+                text += '\nŁącznie: ' + state.later.size + ' dni\n';
             }
             
-            var blob = new Blob([text], {type: 'text/plain'});
+            var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
             a.download = 'nieobecnosci.txt';
             a.click();
-        };
+            URL.revokeObjectURL(url);
+        }
 
-        document.getElementById('btnExport').onclick = function() {
-            var data = {
-                absent: Array.from(state.absent),
-                later: Array.from(state.later)
-            };
-            var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+        function exportData() {
+            var data = { absent: Array.from(state.absent), later: Array.from(state.later) };
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
-            a.download = 'kalendarz.json';
+            a.download = 'kalendarz_danych.json';
             a.click();
-        };
+            URL.revokeObjectURL(url);
+        }
 
-        document.getElementById('fileImport').onchange = function(e) {
-            var file = e.target.files[0];
+        function importData(event) {
+            var file = event.target.files[0];
             if (file) {
                 var reader = new FileReader();
-                reader.onload = function(ev) {
+                reader.onload = function(e) {
                     try {
-                        var data = JSON.parse(ev.target.result);
-                        state.absent = new Set(data.absent);
-                        state.later = new Set(data.later);
-                        saveData();
-                        render();
-                    } catch(err) {
-                        alert('Blad wczytywania pliku!');
+                        var data = JSON.parse(e.target.result);
+                        if (Array.isArray(data.absent) && Array.isArray(data.later)) {
+                            state.absent = new Set(data.absent);
+                            state.later = new Set(data.later);
+                            saveData();
+                            render();
+                        } else { throw new Error('Invalid file format'); }
+                    } catch (err) {
+                        alert('Błąd wczytywania pliku. Upewnij się, że ma poprawny format.');
                     }
                 };
                 reader.readAsText(file);
             }
-        };
+        }
 
-        document.getElementById('btnClear').onclick = function() {
-            if (confirm('Czy na pewno chcesz wyczyscic wszystkie zaznaczenia?')) {
-                state.absent = new Set();
-                state.later = new Set();
-                saveData();
-                render();
-            }
-        };
-
-        initData();
-        updateStats();
-        render();
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
